@@ -1,0 +1,40 @@
+server:
+  port: ${PORT:8080}
+  error:
+    include-stacktrace: never
+    include-message: never
+
+spring:
+  application:
+    name: magicshop-api
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3307}/${DB_NAME:magicshop}?${DB_PARAMS:createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Santiago}
+    username: ${DB_USER:magicshop}
+    password: ${DB_PASSWORD:magicshop123}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    show-sql: false
+
+springdoc:
+  api-docs:
+    enabled: ${SWAGGER_ENABLED:true}
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: ${SWAGGER_ENABLED:true}
+    path: /swagger-ui.html
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:}
+    expiration-minutes: ${JWT_EXPIRATION_MINUTES:120}
+  cors:
+    allowed-origins: ${CORS_ORIGINS:http://localhost:5173}
+  mtg:
+    url: ${MTG_URL:https://api.magicthegathering.io/v1}
+  seed:
+    admin-email: ${ADMIN_EMAIL:admin@magicshop.com}
+    admin-password: ${ADMIN_PASSWORD:admin123}
+    user-email: ${DEMO_USER_EMAIL:comprador@magicshop.com}
+    user-password: ${DEMO_USER_PASSWORD:comprador123}
