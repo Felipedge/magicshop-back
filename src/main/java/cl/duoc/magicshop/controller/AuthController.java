@@ -41,6 +41,16 @@ public class AuthController {
         return authService.registrar(solicitud);
     }
 
+    /** Renovación del token: requiere un token válido y devuelve uno nuevo con el vencimiento reiniciado. */
+    @PostMapping("/refresh")
+    public AuthResponse refresh(Authentication autenticacion) {
+        AuthUser actor = AuthUser.actual(autenticacion);
+        if (actor == null) {
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "Debes iniciar sesión.");
+        }
+        return authService.renovar(actor);
+    }
+
     @GetMapping("/me")
     public UsuarioDto me(Authentication autenticacion) {
         AuthUser actor = AuthUser.actual(autenticacion);

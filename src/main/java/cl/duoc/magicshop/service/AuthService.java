@@ -7,6 +7,7 @@ import cl.duoc.magicshop.dto.UsuarioDto;
 import cl.duoc.magicshop.entity.Usuario;
 import cl.duoc.magicshop.exception.ApiException;
 import cl.duoc.magicshop.repository.UsuarioRepository;
+import cl.duoc.magicshop.security.AuthUser;
 import cl.duoc.magicshop.security.JwtService;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -39,6 +40,18 @@ public class AuthService {
         if (usuario == null || !coincide) {
             throw new ApiException(HttpStatus.UNAUTHORIZED, MENSAJE_CREDENCIALES);
         }
+        return new AuthResponse(jwtService.generar(usuario), UsuarioDto.de(usuario));
+    }
+
+    /**
+     * Renueva la sesión: entrega un token nuevo con la fecha de vencimiento reiniciada.
+     * Solo se llega aquí con un token válido y no vencido (lo exige Spring Security) y los datos
+     * (rol, correo) se vuelven a leer de la BD, así un cambio de rol o una cuenta eliminada se notan.
+     */
+    @Transactional(readOnly = true)
+    public AuthResponse renovar(AuthUser actor) {
+        Usuario usuario = usuarios.findById(actor.id())
+                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Debes iniciar sesión."));
         return new AuthResponse(jwtService.generar(usuario), UsuarioDto.de(usuario));
     }
 
