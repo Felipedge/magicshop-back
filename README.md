@@ -41,8 +41,8 @@ En producción: `SWAGGER_ENABLED=false`.
 mvn test
 ```
 
-Usan H2 en memoria (no necesitan MySQL): login, permisos por rol, validaciones, filtros, compra con descuento de stock,
-rechazo por stock insuficiente y acceso a órdenes.
+Usan H2 en memoria (no necesitan MySQL): login, renovación del token, permisos por rol, validaciones, filtros, compra con descuento de stock,
+rechazo por stock insuficiente y acceso a órdenes. `JwtServiceTest` prueba el token por separado (válido, vencido, firma ajena).
 
 ## 4. Endpoints
 
@@ -50,6 +50,7 @@ rechazo por stock insuficiente y acceso a órdenes.
 |--------|------|--------|
 | POST | `/api/auth/login` · `/api/auth/registro` | Público |
 | GET | `/api/auth/me` | Sesión iniciada |
+| POST | `/api/auth/refresh` | Sesión iniciada (renueva el token) |
 | GET | `/api/productos` · `/api/productos/{id}` | Público |
 | POST · PATCH · DELETE | `/api/productos[/{id}]` | ADMIN |
 | GET | `/api/categorias` · `/api/categorias/{id}` | Público |
@@ -59,6 +60,15 @@ rechazo por stock insuficiente y acceso a órdenes.
 | POST | `/api/ordenes` (pagar) | Público (invitado o con sesión) |
 | GET | `/api/ordenes/{id}` | Público (el id es un UUID imposible de adivinar) |
 | GET | `/api/ordenes` | ADMIN: todas · cliente: solo las suyas |
+
+### Tokens JWT: generación, verificación y renovación
+
+| Etapa | Cómo funciona |
+|-------|---------------|
+| Generación | `login` y `registro` entregan un JWT firmado con HS256 (`JWT_SECRET`) que incluye correo, id y rol, y vence a los `JWT_EXPIRATION_MINUTES` (por defecto 120) |
+| Verificación | `JwtAuthFilter` valida firma y vencimiento en cada petición y vuelve a leer al usuario en la BD, así un rol cambiado o una cuenta eliminada se notan de inmediato |
+| Renovación | `POST /api/auth/refresh` (con un token todavía válido) entrega un token nuevo con el vencimiento reiniciado. El front lo llama solo antes de que venza |
+| Vencido o inválido | `401` con JSON; el front cierra la sesión |
 
 ### Filtros y orden (mismo estilo que json-server, solo sobre campos permitidos)
 
@@ -136,9 +146,11 @@ src/main/java/cl/duoc/magicshop/
 
 ## 7. Despliegue (EC2)
 
+Guía completa para AWS Learner Lab (EC2 + Docker Compose, IP elástica, swap, CORS, comprobaciones de seguridad): [`DEPLOY.md`](DEPLOY.md). Resumen:
+
 ```bash
 cp .env.prod.example .env.prod      # completar los valores
 docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
 ```
 
-`CORS_ORIGINS` debe ser la URL exacta del frontend. Al compilar el frontend, `VITE_API_URL` debe apuntar a `http://<ip-o-dominio>/api`.
+`CORS_ORIGINS` debe ser la URL exacta del frontend (sin `/` final). Al compilar el frontend, `VITE_API_URL` debe apuntar a `http://<ip-o-dominio>/api`. Swagger viene apagado en producción (`SWAGGER_ENABLED=false`).
