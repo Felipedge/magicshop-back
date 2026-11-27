@@ -199,6 +199,28 @@ class MagicshopApiTest {
     }
 
     @Test
+    void refreshConTokenValidoEntregaTokenNuevoUtilizable() throws Exception {
+        String cuerpo = mvc.perform(post("/api/auth/refresh").header(HttpHeaders.AUTHORIZATION, tokenCliente()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").isNotEmpty())
+                .andExpect(jsonPath("$.usuario.rol").value("cliente"))
+                .andExpect(jsonPath("$.usuario.password").doesNotExist())
+                .andReturn().getResponse().getContentAsString();
+        String nuevo = "Bearer " + mapper.readTree(cuerpo).get("token").asText();
+
+        mvc.perform(get("/api/auth/me").header(HttpHeaders.AUTHORIZATION, nuevo))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value("comprador@magicshop.com"));
+    }
+
+    @Test
+    void refreshSinTokenOConTokenInvalidoResponde401() throws Exception {
+        mvc.perform(post("/api/auth/refresh")).andExpect(status().isUnauthorized());
+        mvc.perform(post("/api/auth/refresh").header(HttpHeaders.AUTHORIZATION, "Bearer token-inventado"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     void adminNoPuedeEliminarSuPropiaCuenta() throws Exception {
         JsonNode sesion = login("admin@magicshop.com", "admin123");
         long id = sesion.get("usuario").get("id").asLong();
